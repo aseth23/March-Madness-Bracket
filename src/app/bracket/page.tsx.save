@@ -1,0 +1,15 @@
+"use client";
+
+export default function BracketPage() {
+  const entryId =
+    typeof window !== "undefined" ? localStorage.getItem("entry_id") : null;
+
+  return (
+    <div className="min-h-screen p-6">
+      <h1 className="text-2xl font-bold">Bracket Builder (next)</h1>
+      <p className="mt-2 text-sm text-gray-600">Entry ID: {entryId ?? "none"}</p>
+      <p className="mt-4">This page is live. Next we build the clickable bracket UI here.</p>
+    </div>
+  );
+}
+
