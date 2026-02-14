@@ -27,20 +27,40 @@ export default function LeaderboardPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   async function load() {
-    setMsg(null);
-    try {
-      const res = await fetch(`${API}/entries`, { cache: "no-store" });
-      const data = await res.json().catch(() => []);
-      if (!res.ok) {
-        setMsg(`Error loading entries: ${res.status}`);
-        return;
-      }
-
-      const list: Entry[] = Array.isArray(data) ? data : data?.entries ?? [];
-      setEntries(list);
-    } catch {
-      setMsg("Network error loading leaderboard. Is FastAPI running?");
+    if (!API) {
+      setMsg("Missing NEXT_PUBLIC_API_BASE_URL (Vercel env var not set).");
+      return;
     }
+
+    setMsg(null);
+
+    const tryFetch = async (attempt: number): Promise<void> => {
+      try {
+        const res = await fetch(`${API}/entries`, { cache: "no-store" });
+        const data = await res.json().catch(() => []);
+
+        if (!res.ok) {
+          setMsg(`Error loading entries: ${res.status}`);
+          return;
+        }
+
+        const list: Entry[] = Array.isArray(data) ? data : data?.entries ?? [];
+        setEntries(list);
+        setMsg(null);
+        return;
+      } catch {
+        if (attempt < 3) {
+          setMsg("Waking up the server... retrying");
+          await new Promise((r) => setTimeout(r, 1500 * attempt));
+          return tryFetch(attempt + 1);
+        }
+        setMsg(
+          "Network error loading leaderboard. API may be sleeping or blocked by CORS."
+        );
+      }
+    };
+
+    await tryFetch(1);
   }
 
   useEffect(() => {
