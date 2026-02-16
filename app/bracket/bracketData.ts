@@ -52,7 +52,7 @@ export const BRACKET_2026_PLACEHOLDER: Region[] = [
   ]),
 
   buildRegion("West", [
-    "Florida (Test)gitp",
+    "Florida",
     "St. John's",
     "Texas Tech",
     "Maryland",
@@ -67,7 +67,7 @@ export const BRACKET_2026_PLACEHOLDER: Region[] = [
     "Grand Canyon",
     "UNC Wilmington",
     "Omaha",
-    "Norfolk State (Test)",
+    "Norfolk State",
   ]),
 
   buildRegion("East", [
