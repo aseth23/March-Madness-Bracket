@@ -105,6 +105,6 @@ export const RESULTS: Record<string, string> = {
   // ======================
   "FF_SEMI_1": "1|Florida",
   "FF_SEMI_2": "1|Duke",
-  "FF_CHAMP": "1|Florida",
+  "FF_CHAMP": "1|Duke",
 };
 
