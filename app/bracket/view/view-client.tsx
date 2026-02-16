@@ -88,6 +88,7 @@ export default function ViewBracketClient() {
 
   const [name, setName] = useState<string>("Bracket");
   const [username, setUsername] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [locked, setLocked] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -96,6 +97,7 @@ export default function ViewBracketClient() {
     async function load() {
       setMsg(null);
       if (!entryId) {
+        setEmail(null);
         setMsg("Missing entry id in URL. Use /leaderboard and click View.");
         return;
       }
@@ -103,16 +105,20 @@ export default function ViewBracketClient() {
       try {
         const res = await fetch(`${API}/entries/${entryId}`, { cache: "no-store" });
         const data = await res.json().catch(() => ({}));
+
         if (!res.ok) {
+          setEmail(null);
           setMsg(data?.detail ?? `Error loading entry: ${res.status}`);
           return;
         }
 
         setName(data?.name ?? `Entry ${entryId}`);
         setUsername(data?.username ?? null);
+        setEmail(data?.email ?? null);
         setPicks(data?.bracket ?? {});
         setLocked(!!data?.locked);
       } catch {
+        setEmail(null);
         setMsg("Network error loading bracket. Is API running?");
       }
     }
@@ -144,16 +150,21 @@ export default function ViewBracketClient() {
 
   return (
     <div className="min-h-screen bg-[#020617] text-white p-2 sm:p-4 font-sans">
-      <header className="mb-4 text-center">
+      <header className="mb-4 text-center relative">
+        {email && (
+          <div className="absolute right-2 top-2 text-[11px] text-slate-300">
+            Email: <span className="font-mono text-slate-100">{email}</span>
+          </div>
+        )}
+
         <h1 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter">
           {name}{" "}
-          <span className="text-red-600">
-            {username ? `(@${username})` : ""}
-          </span>
+          <span className="text-red-600">{username ? `(@${username})` : ""}</span>
         </h1>
 
         <div className="mt-1 text-[11px] text-slate-400">
-          Viewing entry: <span className="font-mono text-slate-200">{entryId ?? "—"}</span>
+          Viewing entry:{" "}
+          <span className="font-mono text-slate-200">{entryId ?? "—"}</span>
           {locked ? <span className="ml-2 text-red-400">• LOCKED</span> : null}
         </div>
 
