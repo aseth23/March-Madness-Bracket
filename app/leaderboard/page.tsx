@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { scoreBracket } from "@/lib/scoring";
+import { RESULTS, ROUND_POINTS } from "@/app/results/resultsData";
 
 type Entry = {
   id: string | number;
@@ -20,6 +20,26 @@ type Row = {
   locked: boolean;
 };
 
+function pointsForGameId(gameId: string): number {
+  if (gameId === "FF_CHAMP") return ROUND_POINTS["CHAMP"];
+  if (gameId.startsWith("FF_")) return ROUND_POINTS["FF"];
+  if (gameId.includes("_64_")) return ROUND_POINTS["64"];
+  if (gameId.includes("_32_")) return ROUND_POINTS["32"];
+  if (gameId.includes("_S16_")) return ROUND_POINTS["S16"];
+  if (gameId.includes("_E8_")) return ROUND_POINTS["E8"];
+  return 0;
+}
+
+function scoreBracket(picks: Record<string, string>): number {
+  let score = 0;
+  for (const [gameId, correct] of Object.entries(RESULTS)) {
+    if (picks?.[gameId] && picks[gameId] === correct) {
+      score += pointsForGameId(gameId);
+    }
+  }
+  return score;
+}
+
 export default function LeaderboardPage() {
   const API = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -34,52 +54,40 @@ export default function LeaderboardPage() {
 
     setMsg(null);
 
-    const tryFetch = async (attempt: number): Promise<void> => {
-      try {
-        const res = await fetch(`${API}/entries`, { cache: "no-store" });
-        const data = await res.json().catch(() => []);
+    try {
+      const res = await fetch(`${API}/entries`, { cache: "no-store" });
+      const data = await res.json().catch(() => []);
 
-        if (!res.ok) {
-          setMsg(`Error loading entries: ${res.status}`);
-          return;
-        }
-
-        const list: Entry[] = Array.isArray(data) ? data : data?.entries ?? [];
-        setEntries(list);
-        setMsg(null);
+      if (!res.ok) {
+        setMsg(`Error loading entries: ${res.status}`);
         return;
-      } catch {
-        if (attempt < 3) {
-          setMsg("Waking up the server... retrying");
-          await new Promise((r) => setTimeout(r, 1500 * attempt));
-          return tryFetch(attempt + 1);
-        }
-        setMsg(
-          "Network error loading leaderboard. API may be sleeping or blocked by CORS."
-        );
       }
-    };
 
-    await tryFetch(1);
+      const list: Entry[] = Array.isArray(data) ? data : data?.entries ?? [];
+      setEntries(list);
+      setMsg(null);
+    } catch {
+      setMsg("Network error loading leaderboard. API may be sleeping or blocked by CORS.");
+    }
   }
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 5000);
+    const t = setInterval(load, 30000); // ✅ every 30 seconds
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const rows: Row[] = useMemo(() => {
-    const mapped: Row[] = entries.map((e) => {
+    const mapped: Row[] = (entries ?? []).map((e) => {
       const id = String(e.id);
-      const bracket = e.bracket ?? {};
-      const s = scoreBracket(bracket);
+      const picks = e.bracket ?? {};
+      const score = scoreBracket(picks);
       return {
         id,
         name: e.name ?? id,
         username: e.username ?? null,
-        score: s.score,
+        score,
         locked: !!e.locked,
       };
     });
@@ -94,9 +102,7 @@ export default function LeaderboardPage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Live Standings</h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Auto-refreshes every 5 seconds.
-            </p>
+            <p className="text-sm text-slate-400 mt-1">Auto-refreshes every 30 seconds.</p>
           </div>
 
           <button
@@ -131,10 +137,9 @@ export default function LeaderboardPage() {
                 <tr key={r.id} className="border-t border-slate-800">
                   <td className="p-3">{idx + 1}</td>
 
-                  {/* Click name to view bracket (query param approach) */}
                   <td className="p-3">
                     <Link
-                      href={`/bracket/view?id=${encodeURIComponent(r.id)}`}
+                      href={`/bracket/view?id=${encodeURIComponent(String(r.id))}`}
                       className="font-semibold hover:underline text-slate-100"
                     >
                       {r.name}
@@ -145,10 +150,9 @@ export default function LeaderboardPage() {
                   <td className="p-3 font-bold">{r.score}</td>
                   <td className="p-3">{r.locked ? "Yes" : "No"}</td>
 
-                  {/* Button to view bracket (query param approach) */}
                   <td className="p-3">
                     <Link
-                      href={`/bracket/view?id=${encodeURIComponent(r.id)}`}
+                      href={`/bracket/view?id=${encodeURIComponent(String(r.id))}`}
                       className="inline-block rounded-lg border border-slate-700 bg-slate-900 px-3 py-1 hover:bg-slate-800"
                     >
                       View
