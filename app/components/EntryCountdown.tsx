@@ -2,42 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+const DEADLINE_ET_ISO = "2026-03-19T12:00:00-04:00"; // March 19, 2026 12:00 PM ET
+
 export default function EntryCountdown() {
-  const API = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-  const [deadlineIso, setDeadlineIso] = useState<string | null>(null);
-  const [passed, setPassed] = useState<boolean>(false);
   const [now, setNow] = useState<number>(() => Date.now());
-
-  useEffect(() => {
-    if (!API) return;
-
-    (async () => {
-      try {
-        const res = await fetch(`${API}/meta`, { cache: "no-store" });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok) {
-          setDeadlineIso(data?.deadline_et ?? null);
-          setPassed(!!data?.deadline_passed);
-        }
-      } catch {
-        // ignore
-      }
-    })();
-  }, [API]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const text = useMemo(() => {
-    if (!deadlineIso) return "Loading entry deadline…";
-
-    const deadline = new Date(deadlineIso).getTime();
+  const { text, closed } = useMemo(() => {
+    const deadline = new Date(DEADLINE_ET_ISO).getTime();
     const ms = deadline - now;
 
-    if (passed || ms <= 0) return "Entries are closed";
+    if (ms <= 0) return { text: "Entries are closed", closed: true };
 
     const total = Math.floor(ms / 1000);
     const days = Math.floor(total / 86400);
@@ -52,11 +31,8 @@ export default function EntryCountdown() {
       `${seconds}s`,
     ].filter(Boolean);
 
-    return `Entries close in ${parts.join(" ")}`;
-  }, [deadlineIso, now, passed]);
-
-  const closed =
-    passed || (deadlineIso ? new Date(deadlineIso).getTime() - now <= 0 : false);
+    return { text: `Entries close in ${parts.join(" ")}`, closed: false };
+  }, [now]);
 
   return (
     <div
