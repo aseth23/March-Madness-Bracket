@@ -67,7 +67,7 @@ export const BRACKET_2026_PLACEHOLDER: Region[] = [
     "Grand Canyon",
     "UNC Wilmington",
     "Omaha",
-    "Norfolk State",
+    "Norfolk State (Test)",
   ]),
 
   buildRegion("East", [
